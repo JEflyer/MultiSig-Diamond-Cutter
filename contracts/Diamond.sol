@@ -28,6 +28,13 @@ contract Diamond {
         LibDiamond.diamondCut(cut, address(0), "");        
     }
 
+    function setMultiSig(address multiSig) external {
+        LibDiamond.enforceIsContractOwner();
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        require(ds.cutterMultiSig == address(0),"ERR:AS");//AS => Already Set
+        ds.cutterMultiSig = multiSig;
+    }
+
     // Find facet for function that is called and execute the
     // function if a facet is found and return any value.
     fallback() external payable {

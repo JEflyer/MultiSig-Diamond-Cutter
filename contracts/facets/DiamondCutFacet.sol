@@ -6,8 +6,8 @@ pragma solidity ^0.8.0;
 * EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
 /******************************************************************************/
 
-import { IDiamondCut } from "../interfaces/IDiamondCut.sol";
-import { LibDiamond } from "../libraries/LibDiamond.sol";
+import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
+import {LibDiamond} from "../libraries/LibDiamond.sol";
 
 // Remember to add the loupe functions from DiamondLoupeFacet to the diamond.
 // The loupe functions are required by the EIP2535 Diamonds standard
@@ -19,18 +19,19 @@ contract DiamondCutFacet is IDiamondCut {
     /// @param _init The address of the contract or facet to execute _calldata
     /// @param _calldata A function call, including function selector and arguments
     ///                  _calldata is executed with delegatecall on _init
-    function diamondCut(
-        FacetCut[] calldata _diamondCut,
-        address _init,
-        bytes calldata _calldata
-    ) external override {
-        LibDiamond.enforceIsContractOwner();
+    function diamondCut(FacetCut[] calldata _diamondCut, address _init, bytes calldata _calldata) external override {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        
+        if(ds.cutterMultiSig != address(0)){
+            require(msg.sender == ds.cutterMultiSig, "ERR:NC"); //NC => Not Cutter
+        } else{
+            LibDiamond.enforceIsContractOwner();
+        }
         uint256 originalSelectorCount = ds.selectorCount;
         uint256 selectorCount = originalSelectorCount;
         bytes32 selectorSlot;
         // Check if last selector slot is not full
-        // "selectorCount & 7" is a gas efficient modulo by eight "selectorCount % 8" 
+        // "selectorCount & 7" is a gas efficient modulo by eight "selectorCount % 8"
         if (selectorCount & 7 > 0) {
             // get last selectorSlot
             // "selectorCount >> 3" is a gas efficient division by 8 "selectorCount / 8"
@@ -54,7 +55,7 @@ contract DiamondCutFacet is IDiamondCut {
             ds.selectorCount = uint16(selectorCount);
         }
         // If last selector slot is not full
-        // "selectorCount & 7" is a gas efficient modulo by eight "selectorCount % 8" 
+        // "selectorCount & 7" is a gas efficient modulo by eight "selectorCount % 8"
         if (selectorCount & 7 > 0) {
             // "selectorCount >> 3" is a gas efficient division by 8 "selectorCount / 8"
             ds.selectorSlots[selectorCount >> 3] = selectorSlot;
